@@ -1,0 +1,3150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapter 10 - The Surviving Centennials</title>
+
+<!-- Three.js for the 3D world -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+    background: #050509;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* =========================
+   GAME CANVAS
+========================= */
+
+#gameCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* =========================
+   TITLE SCREEN
+========================= */
+
+#titleScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background:
+        radial-gradient(circle at center, rgba(110,70,160,.45), transparent 45%),
+        linear-gradient(135deg, #080812, #1d0e28, #050509);
+}
+
+.titleBox {
+    width: min(900px, 92%);
+    padding: 45px;
+    border: 2px solid rgba(255,255,255,.25);
+    border-radius: 25px;
+    background: rgba(10,10,20,.82);
+    box-shadow: 0 0 60px rgba(150,80,255,.25);
+    backdrop-filter: blur(10px);
+}
+
+.titleBox h1 {
+    font-size: clamp(35px, 6vw, 75px);
+    color: #ffd76b;
+    text-shadow: 0 0 25px #ffb300;
+    margin-bottom: 15px;
+}
+
+.titleBox h2 {
+    font-size: 25px;
+    margin-bottom: 10px;
+    color: #fff;
+}
+
+.titleBox p {
+    color: #bbb;
+    margin: 8px;
+}
+
+#startButton,
+.menuButton {
+    border: 0;
+    padding: 14px 28px;
+    margin: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(135deg, #7436d4, #a94df5);
+    font-size: 16px;
+    font-weight: bold;
+    transition: .2s;
+}
+
+#startButton:hover,
+.menuButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 20px #9b4dff;
+}
+
+/* =========================
+   HUD
+========================= */
+
+#hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#topLeft {
+    position: absolute;
+    left: 18px;
+    top: 18px;
+    width: 260px;
+}
+
+.playerName {
+    font-weight: bold;
+    font-size: 18px;
+    color: #ffd76b;
+}
+
+.levelText {
+    color: #aaa;
+    margin: 4px 0;
+}
+
+.bar {
+    height: 16px;
+    background: rgba(0,0,0,.65);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 5px 0;
+}
+
+.barFill {
+    height: 100%;
+    transition: width .25s;
+}
+
+#healthFill {
+    width: 100%;
+    background: linear-gradient(90deg,#e21b2d,#ff5964);
+}
+
+#staminaFill {
+    width: 100%;
+    background: linear-gradient(90deg,#23a6d5,#42e695);
+}
+
+#xpFill {
+    width: 0%;
+    background: linear-gradient(90deg,#ffcb52,#ff8c00);
+}
+
+#topRight {
+    position: absolute;
+    right: 18px;
+    top: 18px;
+    text-align: right;
+}
+
+#clock {
+    color: #ffd76b;
+    font-weight: bold;
+}
+
+#cameraMode {
+    color: #bbb;
+    margin-top: 4px;
+}
+
+#questBox {
+    position: absolute;
+    right: 18px;
+    top: 90px;
+    width: 300px;
+    background: rgba(5,5,10,.72);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+#questBox h3 {
+    color: #ffd76b;
+    margin-bottom: 8px;
+}
+
+#questText {
+    color: #ddd;
+    line-height: 1.5;
+}
+
+/* =========================
+   MINIMAP
+========================= */
+
+#minimap {
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    width: 190px;
+    height: 190px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.5);
+    background: rgba(0,0,0,.55);
+}
+
+#mapCanvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+/* =========================
+   CONTROLS
+========================= */
+
+#controlsHint {
+    position: absolute;
+    left: 18px;
+    bottom: 18px;
+    color: #ddd;
+    background: rgba(0,0,0,.55);
+    padding: 10px 14px;
+    border-radius: 10px;
+    line-height: 1.5;
+}
+
+/* =========================
+   INTERACTION
+========================= */
+
+#interaction {
+    position: absolute;
+    left: 50%;
+    bottom: 90px;
+    transform: translateX(-50%);
+    padding: 12px 22px;
+    border-radius: 10px;
+    background: rgba(0,0,0,.75);
+    color: white;
+    display: none;
+    font-weight: bold;
+}
+
+/* =========================
+   CROSSHAIR
+========================= */
+
+#crosshair {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 22px;
+    transform: translate(-50%,-50%);
+}
+
+#crosshair::before,
+#crosshair::after {
+    content: "";
+    position: absolute;
+    background: rgba(255,255,255,.85);
+}
+
+#crosshair::before {
+    width: 2px;
+    height: 22px;
+    left: 10px;
+}
+
+#crosshair::after {
+    width: 22px;
+    height: 2px;
+    top: 10px;
+}
+
+/* =========================
+   MENUS
+========================= */
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(7px);
+}
+
+.panel {
+    width: min(850px, 94%);
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #11111a;
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 18px;
+    padding: 25px;
+    box-shadow: 0 0 40px rgba(0,0,0,.8);
+}
+
+.panel h2 {
+    color: #ffd76b;
+    margin-bottom: 15px;
+}
+
+.closeButton {
+    float: right;
+    cursor: pointer;
+    font-size: 25px;
+    color: #aaa;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+    gap: 12px;
+}
+
+.card {
+    padding: 15px;
+    border-radius: 12px;
+    background: #191923;
+    border: 1px solid rgba(255,255,255,.1);
+}
+
+.card h3 {
+    color: #ffd76b;
+    margin-bottom: 7px;
+}
+
+.card p {
+    color: #bbb;
+    line-height: 1.5;
+}
+
+/* =========================
+   STORY
+========================= */
+
+.storyText {
+    white-space: pre-wrap;
+    line-height: 1.75;
+    color: #ddd;
+    font-size: 15px;
+}
+
+.storyTitle {
+    text-align: center;
+    color: #ffd76b;
+    margin-bottom: 20px;
+}
+
+/* =========================
+   SKILLS
+========================= */
+
+.skill {
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #191923;
+    border-radius: 12px;
+}
+
+.skill button {
+    margin-top: 8px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+    background: #7436d4;
+    color: white;
+}
+
+.skill button:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+/* =========================
+   NOTIFICATIONS
+========================= */
+
+#notifications {
+    position: fixed;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    z-index: 200;
+    pointer-events: none;
+}
+
+.notification {
+    background: rgba(10,10,20,.92);
+    border: 1px solid #ffd76b;
+    padding: 14px 22px;
+    margin: 8px;
+    border-radius: 10px;
+    text-align: center;
+    animation: notify 3s forwards;
+}
+
+@keyframes notify {
+    0% {opacity:0; transform:translateY(20px);}
+    15% {opacity:1; transform:translateY(0);}
+    80% {opacity:1;}
+    100% {opacity:0; transform:translateY(-20px);}
+}
+
+/* =========================
+   DAMAGE TEXT
+========================= */
+
+.damage {
+    position: fixed;
+    color: #ff5555;
+    font-weight: bold;
+    pointer-events: none;
+    animation: damageFloat 1s forwards;
+    z-index: 150;
+}
+
+@keyframes damageFloat {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-60px);
+    }
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:700px) {
+    #topLeft {
+        width: 200px;
+    }
+
+    #questBox {
+        width: 230px;
+        top: 150px;
+    }
+
+    #controlsHint {
+        font-size: 11px;
+    }
+
+    #minimap {
+        width: 130px;
+        height: 130px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- =========================
+     TITLE SCREEN
+========================= -->
+
+<div id="titleScreen">
+
+    <div class="titleBox">
+
+        <h1>Chapter 10</h1>
+
+        <h2>The Surviving Centennials</h2>
+
+        <p>Bedtime Stories</p>
+        <p>February 14, 2020</p>
+
+        <br>
+
+        <p>
+            From the creations of
+            <b>Mandatory Lifestyles</b>
+            And <b>“The Rages Band”</b>
+        </p>
+
+        <br>
+
+        <p>
+            A 3D story-adventure RPG about Arthur McKogan,
+            longevity, cardiovascular health, friendship,
+            courage, and surviving the passage of time.
+        </p>
+
+        <button id="startButton">START GAME</button>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     HUD
+========================= -->
+
+<div id="hud" style="display:none">
+
+    <div id="topLeft">
+
+        <div class="playerName">Arthur McKogan</div>
+
+        <div class="levelText">
+            Level <span id="level">1</span>
+            —
+            <span id="className">Centennial Survivor</span>
+        </div>
+
+        <div class="bar">
+            <div class="barFill" id="healthFill"></div>
+        </div>
+
+        <div class="bar">
+            <div class="barFill" id="staminaFill"></div>
+        </div>
+
+        <div class="bar">
+            <div class="barFill" id="xpFill"></div>
+        </div>
+
+        <div style="font-size:12px;color:#aaa">
+            HP <span id="hpText">100/100</span>
+            |
+            Stamina <span id="staminaText">100/100</span>
+        </div>
+
+    </div>
+
+    <div id="topRight">
+
+        <div id="clock">Year 2020</div>
+
+        <div id="cameraMode">
+            Third Person
+        </div>
+
+        <button class="menuButton"
+                onclick="openMenu('inventoryMenu')"
+                style="pointer-events:auto">
+            Inventory [I]
+        </button>
+
+        <button class="menuButton"
+                onclick="openMenu('questMenu')"
+                style="pointer-events:auto">
+            Quests [Q]
+        </button>
+
+        <button class="menuButton"
+                onclick="openMenu('skillMenu')"
+                style="pointer-events:auto">
+            Skills [K]
+        </button>
+
+        <button class="menuButton"
+                onclick="openMenu('storyMenu')"
+                style="pointer-events:auto">
+            Story [L]
+        </button>
+
+    </div>
+
+    <div id="questBox">
+
+        <h3>Active Quest</h3>
+
+        <div id="questText">
+            Begin your journey and explore Nafalcram Street.
+        </div>
+
+    </div>
+
+    <div id="controlsHint">
+        <b>WASD</b> Move |
+        <b>Mouse</b> Look |
+        <b>Left Click</b> Attack |
+        <b>E</b> Interact |
+        <b>V</b> Camera |
+        <b>I</b> Inventory |
+        <b>Q</b> Quests |
+        <b>K</b> Skills |
+        <b>L</b> Story
+    </div>
+
+    <div id="interaction">
+        Press E to interact
+    </div>
+
+    <div id="crosshair"></div>
+
+    <div id="minimap">
+        <canvas id="mapCanvas" width="190" height="190"></canvas>
+    </div>
+
+</div>
+
+<div id="notifications"></div>
+
+<!-- =========================
+     INVENTORY
+========================= -->
+
+<div class="overlay" id="inventoryMenu">
+
+    <div class="panel">
+
+        <span class="closeButton"
+              onclick="closeMenus()">×</span>
+
+        <h2>Inventory & Equipment</h2>
+
+        <div class="grid">
+
+            <div class="card">
+                <h3>Walking Cane</h3>
+                <p>Damage: +5</p>
+                <p>Special: Stability</p>
+            </div>
+
+            <div class="card">
+                <h3>Veteran's Coat</h3>
+                <p>Defense: +8</p>
+                <p>Protection against cold.</p>
+            </div>
+
+            <div class="card">
+                <h3>Vegetables</h3>
+                <p>Restores 15 HP.</p>
+            </div>
+
+            <div class="card">
+                <h3>Fresh Fruits</h3>
+                <p>Restores 20 HP.</p>
+            </div>
+
+            <div class="card">
+                <h3>Vitamins & Minerals</h3>
+                <p>Restores stamina.</p>
+            </div>
+
+            <div class="card">
+                <h3>Heart Medicine</h3>
+                <p>Restores 35 HP.</p>
+            </div>
+
+            <div class="card">
+                <h3>Holy Medal</h3>
+                <p>A symbolic reminder of faith and courage.</p>
+            </div>
+
+            <div class="card">
+                <h3>Valentine's Gift</h3>
+                <p>A friendship item.</p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     QUEST MENU
+========================= -->
+
+<div class="overlay" id="questMenu">
+
+    <div class="panel">
+
+        <span class="closeButton"
+              onclick="closeMenus()">×</span>
+
+        <h2>Quests</h2>
+
+        <div class="card">
+            <h3>Main Quest: The Surviving Centennials</h3>
+            <p>
+                Explore Nafalcram Street and learn how Arthur
+                survives through the decades.
+            </p>
+        </div>
+
+        <br>
+
+        <div class="card">
+            <h3>Main Quest: Hospital of Centennials</h3>
+            <p>
+                Visit the Hospital of Centennials and learn
+                cardiovascular health techniques.
+            </p>
+        </div>
+
+        <br>
+
+        <div class="card">
+            <h3>Side Quest: Healthy Heart</h3>
+            <p>
+                Collect vegetables, fruits, vitamins and minerals.
+            </p>
+        </div>
+
+        <br>
+
+        <div class="card">
+            <h3>Side Quest: Friends Across Time</h3>
+            <p>
+                Speak with Arthur's gifted friends representing
+                ages 20, 30, 40 and 50.
+            </p>
+        </div>
+
+        <br>
+
+        <div class="card">
+            <h3>Side Quest: Valentine's Heart</h3>
+            <p>
+                Find the Valentine's Gift and learn about
+                balanced eating and emotional health.
+            </p>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     SKILL MENU
+========================= -->
+
+<div class="overlay" id="skillMenu">
+
+    <div class="panel">
+
+        <span class="closeButton"
+              onclick="closeMenus()">×</span>
+
+        <h2>Progression & Skill Tree</h2>
+
+        <p>
+            Skill Points:
+            <b id="skillPoints">0</b>
+        </p>
+
+        <br>
+
+        <div class="skill">
+            <h3>Cardiovascular Strength</h3>
+            <p>
+                Increases maximum HP by 20.
+            </p>
+            <button onclick="buySkill('heart')">
+                Learn Skill
+            </button>
+        </div>
+
+        <div class="skill">
+            <h3>Controlled Breathing</h3>
+            <p>
+                Restores stamina faster.
+            </p>
+            <button onclick="buySkill('breathing')">
+                Learn Skill
+            </button>
+        </div>
+
+        <div class="skill">
+            <h3>Stress Control</h3>
+            <p>
+                Reduces incoming damage.
+            </p>
+            <button onclick="buySkill('stress')">
+                Learn Skill
+            </button>
+        </div>
+
+        <div class="skill">
+            <h3>Healthy Diet</h3>
+            <p>
+                Food restores more HP.
+            </p>
+            <button onclick="buySkill('diet')">
+                Learn Skill
+            </button>
+        </div>
+
+        <div class="skill">
+            <h3>Centennial Wisdom</h3>
+            <p>
+                Increases XP gained from quests.
+            </p>
+            <button onclick="buySkill('wisdom')">
+                Learn Skill
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- =========================
+     STORY MENU
+========================= -->
+
+<div class="overlay" id="storyMenu">
+
+    <div class="panel">
+
+        <span class="closeButton"
+              onclick="closeMenus()">×</span>
+
+        <h2 class="storyTitle">
+            Chapter 10: Bedtime Stories
+        </h2>
+
+        <div class="storyText">
+
+Chapter 10:Bedtime Stories
+February 14 2020
+
+The Surviving Centennials
+
+From the creations of Mandatory Lifestyles And “The Rages Band
+
+Once upon a time in a near Nafalcram street. A surviving uncle faces with the future. Even his own jobs already done finished by the past age of 50s. He retire himself because he know and wanted to care his own body. And to protect from any disease such as arthritis and any body illness. His name is Arthur McKogan, “The Surviving Centennials”. His age reached in 120 years of centennials. And his surviving process he seen in the pasts was so much terrible. He watched people who died in World War 2. And as he survived his own heart. He don’t take too much peer pressure and emotional stress to make his heart healthy. And according to cardiologist as Arthur McKogan goes to the “Hospital Of Centennials” wherein those uncles and aunts reaching the 100 years of aging. They kept to teach cardiovascular health. This teaches how to survive the heart. As well as the breathing techniques, controlled stress and emotions such as angered and depression. They fight those illness so that the heart may become healthy. And not been traumatized as heart attacks or heart disease. Some nutritious orders made and been eaten by Arthur McKogan for his own golden 90 years is that. He is also the veteran who eat the plenty of vegetables and fruits. To make his heart getting strong and young when he go old. Since all of the stories and check ups he face in his daily lives. He also survived by his own gifted friends at ages 20,30,40 and 50 only. Because in mid 60-100 he can’t care it for too much old. So the friend must supports the young adult and old. And also according to the Valentines day. The function of the heart became balanced and avoid too much eating of sweets and meats. To avoid cholesterol. As based in story of Arthur McKogan. He never dies and believes also in evangelization because he still afraid to die in part. So as Arthur McKogan thinks life is so short to eat longer lives. He spent going unto the church to confess and make his heart healthy and stronger. And goes again and again to make his life endless and immortal. As the story ends Arthur McKogan can reach also by not centennial but millennial and million years to live. And be the gift of friends with emotional content.
+
+Moral Lesson: Don’t be afraid to live a longer life. It’s a blessing of God’s gift. So don’t waste the time to face the memories shared and thoughts. Cause the good heart is the good start to live. And to live life is not short. And been erase the negative happenings in the past eat vitamins and minerals to survive your cardiovascular strong and healthy. To fight diseases and protect immunity whenever grow older and to be young that resists.
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+/* =========================================================
+   GAME VARIABLES
+========================================================= */
+
+let scene;
+let camera;
+let renderer;
+let clock;
+
+let player;
+let playerGroup;
+
+let cameraMode = "third";
+
+let keys = {};
+
+let mouseX = 0;
+let mouseY = 0;
+
+let yaw = 0;
+let pitch = 0;
+
+let playerStats = {
+    level: 1,
+    xp: 0,
+    nextXP: 100,
+    hp: 100,
+    maxHP: 100,
+    stamina: 100,
+    maxStamina: 100,
+    attack: 12,
+    defense: 5,
+    skillPoints: 0,
+    className: "Centennial Survivor"
+};
+
+let skills = {
+    heart: false,
+    breathing: false,
+    stress: false,
+    diet: false,
+    wisdom: false
+};
+
+let inventory = {
+    vegetables: 3,
+    fruits: 3,
+    vitamins: 2,
+    medicine: 2,
+    valentine: 0
+};
+
+let enemies = [];
+let npcs = [];
+let items = [];
+
+let currentQuest = 0;
+
+let quests = [
+    {
+        title: "Explore Nafalcram Street",
+        description:
+        "Explore the world and find the Hospital of Centennials.",
+        completed: false,
+        xp: 50
+    },
+    {
+        title: "Visit the Hospital of Centennials",
+        description:
+        "Speak with the Centennial Doctor.",
+        completed: false,
+        xp: 100
+    },
+    {
+        title: "Healthy Heart",
+        description:
+        "Collect vegetables, fruits and vitamins.",
+        completed: false,
+        xp: 80
+    },
+    {
+        title: "Friends Across Time",
+        description:
+        "Meet the friends of ages 20, 30, 40 and 50.",
+        completed: false,
+        xp: 100
+    },
+    {
+        title: "Valentine's Heart",
+        description:
+        "Find the Valentine's Gift.",
+        completed: false,
+        xp: 100
+    },
+    {
+        title: "The Final Heart",
+        description:
+        "Defeat the Stress Phantom.",
+        completed: false,
+        xp: 200
+    }
+];
+
+/* =========================================================
+   INITIALIZATION
+========================================================= */
+
+function init() {
+
+    scene = new THREE.Scene();
+
+    scene.background = new THREE.Color(0x090914);
+
+    scene.fog = new THREE.Fog(
+        0x090914,
+        35,
+        150
+    );
+
+    camera = new THREE.PerspectiveCamera(
+        70,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        500
+    );
+
+    renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById("gameCanvas"),
+        antialias: true
+    });
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+
+    renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio,2)
+    );
+
+    clock = new THREE.Clock();
+
+    createLights();
+    createWorld();
+    createPlayer();
+    createNPCs();
+    createEnemies();
+    createItems();
+
+    window.addEventListener(
+        "resize",
+        onResize
+    );
+
+    document.addEventListener(
+        "keydown",
+        keyDown
+    );
+
+    document.addEventListener(
+        "keyup",
+        keyUp
+    );
+
+    document.addEventListener(
+        "mousemove",
+        mouseMove
+    );
+
+    document.addEventListener(
+        "mousedown",
+        mouseDown
+    );
+
+    animate();
+}
+
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+function createLights() {
+
+    const ambient =
+        new THREE.AmbientLight(
+            0xffffff,
+            0.65
+        );
+
+    scene.add(ambient);
+
+    const moon =
+        new THREE.DirectionalLight(
+            0xb7c9ff,
+            1.1
+        );
+
+    moon.position.set(
+        -30,
+        60,
+        20
+    );
+
+    scene.add(moon);
+
+    const warm =
+        new THREE.PointLight(
+            0xffa94d,
+            2,
+            70
+        );
+
+    warm.position.set(
+        0,
+        12,
+        0
+    );
+
+    scene.add(warm);
+}
+
+/* =========================================================
+   WORLD
+========================================================= */
+
+function createWorld() {
+
+    const groundGeometry =
+        new THREE.PlaneGeometry(
+            240,
+            240
+        );
+
+    const groundMaterial =
+        new THREE.MeshStandardMaterial({
+            color: 0x242b30,
+            roughness: 0.95
+        });
+
+    const ground =
+        new THREE.Mesh(
+            groundGeometry,
+            groundMaterial
+        );
+
+    ground.rotation.x =
+        -Math.PI / 2;
+
+    scene.add(ground);
+
+    /* Roads */
+
+    createRoad(
+        0,
+        0,
+        240,
+        16
+    );
+
+    createRoad(
+        0,
+        0,
+        16,
+        240
+    );
+
+    /* Buildings */
+
+    createBuilding(
+        -45,
+        -35,
+        30,
+        22,
+        25,
+        0x493a5d,
+        "Hospital of Centennials"
+    );
+
+    createBuilding(
+        45,
+        -35,
+        25,
+        20,
+        18,
+        0x4b5e6e,
+        "Church"
+    );
+
+    createBuilding(
+        -45,
+        40,
+        25,
+        25,
+        20,
+        0x64523b,
+        "Veteran House"
+    );
+
+    createBuilding(
+        45,
+        40,
+        28,
+        20,
+        15,
+        0x435b46,
+        "Community Center"
+    );
+
+    /* Street lamps */
+
+    for(let x=-90;x<=90;x+=20) {
+        createLamp(x, -12);
+        createLamp(x, 12);
+    }
+
+    for(let z=-90;z<=90;z+=20) {
+        createLamp(-12, z);
+        createLamp(12, z);
+    }
+
+    /* Trees */
+
+    for(let i=0;i<70;i++) {
+
+        let x =
+            (Math.random()*200)-100;
+
+        let z =
+            (Math.random()*200)-100;
+
+        if(
+            Math.abs(x)<18 ||
+            Math.abs(z)<18
+        ) continue;
+
+        createTree(x,z);
+    }
+}
+
+function createRoad(x,z,w,d) {
+
+    const geometry =
+        new THREE.PlaneGeometry(w,d);
+
+    const material =
+        new THREE.MeshStandardMaterial({
+            color: 0x17191d
+        });
+
+    const road =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+    road.rotation.x =
+        -Math.PI/2;
+
+    road.position.set(
+        x,
+        0.02,
+        z
+    );
+
+    scene.add(road);
+}
+
+function createBuilding(
+    x,
+    z,
+    w,
+    d,
+    h,
+    color,
+    name
+) {
+
+    const geometry =
+        new THREE.BoxGeometry(
+            w,h,d
+        );
+
+    const material =
+        new THREE.MeshStandardMaterial({
+            color: color
+        });
+
+    const building =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+    building.position.set(
+        x,
+        h/2,
+        z
+    );
+
+    building.userData.name =
+        name;
+
+    scene.add(building);
+
+    /* roof */
+
+    const roof =
+        new THREE.Mesh(
+            new THREE.BoxGeometry(
+                w+2,
+                1,
+                d+2
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x202027
+            })
+        );
+
+    roof.position.set(
+        x,
+        h+0.5,
+        z
+    );
+
+    scene.add(roof);
+}
+
+function createTree(x,z) {
+
+    const trunk =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                .8,
+                1,
+                6,
+                8
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x54391e
+            })
+        );
+
+    trunk.position.set(
+        x,
+        3,
+        z
+    );
+
+    scene.add(trunk);
+
+    const leaves =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                4,
+                12,
+                12
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x245f35
+            })
+        );
+
+    leaves.position.set(
+        x,
+        7,
+        z
+    );
+
+    scene.add(leaves);
+}
+
+function createLamp(x,z) {
+
+    const pole =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                .15,
+                .15,
+                7,
+                8
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x333333
+            })
+        );
+
+    pole.position.set(
+        x,
+        3.5,
+        z
+    );
+
+    scene.add(pole);
+
+    const light =
+        new THREE.PointLight(
+            0xffc86b,
+            1.3,
+            18
+        );
+
+    light.position.set(
+        x,
+        7,
+        z
+    );
+
+    scene.add(light);
+
+    const bulb =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                .35,
+                8,
+                8
+            ),
+            new THREE.MeshBasicMaterial({
+                color: 0xffdd88
+            })
+        );
+
+    bulb.position.set(
+        x,
+        7,
+        z
+    );
+
+    scene.add(bulb);
+}
+
+/* =========================================================
+   PLAYER
+========================================================= */
+
+function createPlayer() {
+
+    playerGroup =
+        new THREE.Group();
+
+    /* Body */
+
+    const body =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                .65,
+                .75,
+                1.8,
+                12
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x526b8b
+            })
+        );
+
+    body.position.y =
+        1.3;
+
+    playerGroup.add(body);
+
+    /* Head */
+
+    const head =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                .55,
+                16,
+                16
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0xc99a79
+            })
+        );
+
+    head.position.y =
+        2.55;
+
+    playerGroup.add(head);
+
+    /* Hair */
+
+    const hair =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                .57,
+                16,
+                16,
+                0,
+                Math.PI*2,
+                0,
+                Math.PI/2
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0xc8c8c8
+            })
+        );
+
+    hair.position.y =
+        2.82;
+
+    playerGroup.add(hair);
+
+    /* Cane */
+
+    const cane =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                .06,
+                .08,
+                2,
+                8
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0x7a4d27
+            })
+        );
+
+    cane.rotation.z =
+        -.25;
+
+    cane.position.set(
+        .7,
+        1,
+        0
+    );
+
+    playerGroup.add(cane);
+
+    playerGroup.position.set(
+        0,
+        0,
+        70
+    );
+
+    scene.add(playerGroup);
+
+    player = playerGroup;
+}
+
+/* =========================================================
+   NPCs
+========================================================= */
+
+function createNPCs() {
+
+    createNPC(
+        "Centennial Doctor",
+        -30,
+        -20,
+        "Doctor",
+        0xffe1a1
+    );
+
+    createNPC(
+        "Young Friend - Age 20",
+        25,
+        20,
+        "Friend",
+        0x42a5f5
+    );
+
+    createNPC(
+        "Friend - Age 30",
+        30,
+        25,
+        "Friend",
+        0x66bb6a
+    );
+
+    createNPC(
+        "Friend - Age 40",
+        35,
+        30,
+        "Friend",
+        0xab82ff
+    );
+
+    createNPC(
+        "Friend - Age 50",
+        40,
+        35,
+        "Friend",
+        0xff9d5c
+    );
+
+    createNPC(
+        "Church Elder",
+        45,
+        -20,
+        "Elder",
+        0xffd54f
+    );
+}
+
+function createNPC(
+    name,
+    x,
+    z,
+    type,
+    color
+) {
+
+    const group =
+        new THREE.Group();
+
+    const body =
+        new THREE.Mesh(
+            new THREE.CylinderGeometry(
+                .55,
+                .65,
+                1.6,
+                10
+            ),
+            new THREE.MeshStandardMaterial({
+                color: color
+            })
+        );
+
+    body.position.y =
+        1.15;
+
+    group.add(body);
+
+    const head =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                .45,
+                12,
+                12
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0xc99a79
+            })
+        );
+
+    head.position.y =
+        2.25;
+
+    group.add(head);
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+    group.userData = {
+        npc: true,
+        name: name,
+        type: type
+    };
+
+    scene.add(group);
+
+    npcs.push(group);
+}
+
+/* =========================================================
+   ENEMIES
+========================================================= */
+
+function createEnemies() {
+
+    createEnemy(
+        "Stress Phantom",
+        0,
+        -75,
+        120,
+        true
+    );
+
+    createEnemy(
+        "Anger Shadow",
+        -75,
+        0,
+        40,
+        false
+    );
+
+    createEnemy(
+        "Depression Shadow",
+        75,
+        0,
+        40,
+        false
+    );
+
+    createEnemy(
+        "Cholesterol Beast",
+        0,
+        45,
+        50,
+        false
+    );
+}
+
+function createEnemy(
+    name,
+    x,
+    z,
+    hp,
+    boss
+) {
+
+    const group =
+        new THREE.Group();
+
+    const body =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                boss ? 2.5 : 1.5,
+                16,
+                16
+            ),
+            new THREE.MeshStandardMaterial({
+                color: boss
+                    ? 0x7e1b8f
+                    : 0x3c174e
+            })
+        );
+
+    body.position.y =
+        boss ? 2.5 : 1.5;
+
+    group.add(body);
+
+    group.position.set(
+        x,
+        0,
+        z
+    );
+
+    group.userData = {
+        enemy: true,
+        name: name,
+        hp: hp,
+        maxHP: hp,
+        boss: boss,
+        damage: boss ? 15 : 8,
+        alive: true
+    };
+
+    scene.add(group);
+
+    enemies.push(group);
+}
+
+/* =========================================================
+   ITEMS
+========================================================= */
+
+function createItems() {
+
+    createItem(
+        "Vegetables",
+        -15,
+        25,
+        "vegetables"
+    );
+
+    createItem(
+        "Vegetables",
+        -20,
+        30,
+        "vegetables"
+    );
+
+    createItem(
+        "Fresh Fruits",
+        -25,
+        35,
+        "fruits"
+    );
+
+    createItem(
+        "Fresh Fruits",
+        -30,
+        40,
+        "fruits"
+    );
+
+    createItem(
+        "Vitamins & Minerals",
+        -35,
+        35,
+        "vitamins"
+    );
+
+    createItem(
+        "Valentine's Gift",
+        20,
+        -10,
+        "valentine"
+    );
+
+    createItem(
+        "Heart Medicine",
+        -38,
+        -25,
+        "medicine"
+    );
+}
+
+function createItem(
+    name,
+    x,
+    z,
+    type
+) {
+
+    const item =
+        new THREE.Mesh(
+            new THREE.OctahedronGeometry(
+                .55
+            ),
+            new THREE.MeshStandardMaterial({
+                color: 0xffd34e,
+                emissive: 0x332200
+            })
+        );
+
+    item.position.set(
+        x,
+        1,
+        z
+    );
+
+    item.userData = {
+        item: true,
+        name: name,
+        type: type,
+        collected: false
+    };
+
+    scene.add(item);
+
+    items.push(item);
+}
+
+/* =========================================================
+   CONTROLS
+========================================================= */
+
+function keyDown(e) {
+
+    keys[e.key.toLowerCase()] = true;
+
+    if(e.key.toLowerCase() === "v") {
+        toggleCamera();
+    }
+
+    if(e.key.toLowerCase() === "i") {
+        toggleMenu("inventoryMenu");
+    }
+
+    if(e.key.toLowerCase() === "q") {
+        toggleMenu("questMenu");
+    }
+
+    if(e.key.toLowerCase() === "k") {
+        toggleMenu("skillMenu");
+    }
+
+    if(e.key.toLowerCase() === "l") {
+        toggleMenu("storyMenu");
+    }
+
+    if(e.key.toLowerCase() === "e") {
+        interact();
+    }
+
+    if(e.key === "1") {
+        useItem("vegetables");
+    }
+
+    if(e.key === "2") {
+        useItem("fruits");
+    }
+
+    if(e.key === "3") {
+        useItem("medicine");
+    }
+
+    if(e.key === "4") {
+        useItem("vitamins");
+    }
+}
+
+function keyUp(e) {
+
+    keys[e.key.toLowerCase()] = false;
+}
+
+function mouseMove(e) {
+
+    if(
+        document.pointerLockElement ===
+        document.body
+    ) {
+
+        yaw -= e.movementX * 0.002;
+
+        pitch -= e.movementY * 0.002;
+
+        pitch =
+            Math.max(
+                -.8,
+                Math.min(.8,pitch)
+            );
+    }
+}
+
+function mouseDown(e) {
+
+    if(
+        document.getElementById(
+            "titleScreen"
+        ).style.display !== "none"
+    ) return;
+
+    if(e.button === 0) {
+        attack();
+    }
+
+    if(
+        document.pointerLockElement !==
+        document.body
+    ) {
+
+        document.body.requestPointerLock();
+    }
+}
+
+/* =========================================================
+   PLAYER MOVEMENT
+========================================================= */
+
+function updatePlayer(delta) {
+
+    if(!player) return;
+
+    let speed = 8;
+
+    if(
+        keys["shift"] &&
+        playerStats.stamina > 0
+    ) {
+
+        speed = 14;
+
+        playerStats.stamina -=
+            20 * delta;
+
+    } else {
+
+        if(skills.breathing) {
+            playerStats.stamina +=
+                12 * delta;
+        } else {
+            playerStats.stamina +=
+                7 * delta;
+        }
+    }
+
+    playerStats.stamina =
+        Math.max(
+            0,
+            Math.min(
+                playerStats.maxStamina,
+                playerStats.stamina
+            )
+        );
+
+    const direction =
+        new THREE.Vector3();
+
+    if(keys["w"]) {
+        direction.z -= 1;
+    }
+
+    if(keys["s"]) {
+        direction.z += 1;
+    }
+
+    if(keys["a"]) {
+        direction.x -= 1;
+    }
+
+    if(keys["d"]) {
+        direction.x += 1;
+    }
+
+    if(direction.length() > 0) {
+
+        direction.normalize();
+
+        const rotated =
+            direction.clone();
+
+        rotated.applyAxisAngle(
+            new THREE.Vector3(0,1,0),
+            yaw
+        );
+
+        player.position.x +=
+            rotated.x * speed * delta;
+
+        player.position.z +=
+            rotated.z * speed * delta;
+
+        player.rotation.y =
+            yaw;
+    }
+
+    player.position.x =
+        Math.max(
+            -105,
+            Math.min(
+                105,
+                player.position.x
+            )
+        );
+
+    player.position.z =
+        Math.max(
+            -105,
+            Math.min(
+                105,
+                player.position.z
+            )
+        );
+}
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+function updateCamera() {
+
+    if(!player) return;
+
+    if(cameraMode === "third") {
+
+        const distance = 9;
+
+        const offset =
+            new THREE.Vector3(
+                0,
+                5,
+                distance
+            );
+
+        offset.applyEuler(
+            new THREE.Euler(
+                pitch,
+                yaw,
+                0,
+                "YXZ"
+            )
+        );
+
+        camera.position.copy(
+            player.position
+        ).add(offset);
+
+        camera.lookAt(
+            player.position.x,
+            player.position.y + 1.5,
+            player.position.z
+        );
+
+    } else {
+
+        camera.position.copy(
+            player.position
+        );
+
+        camera.position.y +=
+            2.4;
+
+        const look =
+            new THREE.Vector3(
+                0,
+                0,
+                -1
+            );
+
+        look.applyEuler(
+            new THREE.Euler(
+                pitch,
+                yaw,
+                0,
+                "YXZ"
+            )
+        );
+
+        camera.lookAt(
+            camera.position.clone().add(look)
+        );
+    }
+
+    document.getElementById(
+        "cameraMode"
+    ).textContent =
+        cameraMode === "third"
+            ? "Third Person"
+            : "First Person";
+}
+
+function toggleCamera() {
+
+    cameraMode =
+        cameraMode === "third"
+            ? "first"
+            : "third";
+
+    notify(
+        cameraMode === "third"
+            ? "Third-person camera"
+            : "First-person camera"
+    );
+}
+
+/* =========================================================
+   COMBAT
+========================================================= */
+
+function attack() {
+
+    if(playerStats.stamina < 10) {
+
+        notify(
+            "Too tired to attack!"
+        );
+
+        return;
+    }
+
+    playerStats.stamina -= 10;
+
+    let closest = null;
+
+    let closestDistance = 5;
+
+    enemies.forEach(enemy => {
+
+        if(!enemy.userData.alive)
+            return;
+
+        const d =
+            player.position.distanceTo(
+                enemy.position
+            );
+
+        if(d < closestDistance) {
+
+            closest =
+                enemy;
+
+            closestDistance =
+                d;
+        }
+    });
+
+    if(!closest) {
+
+        notify(
+            "Attack missed."
+        );
+
+        return;
+    }
+
+    let damage =
+        playerStats.attack;
+
+    if(
+        skills.heart
+    ) {
+        damage += 3;
+    }
+
+    closest.userData.hp -= damage;
+
+    showDamage(
+        closest,
+        damage
+    );
+
+    if(
+        closest.userData.hp <= 0
+    ) {
+
+        closest.userData.alive =
+            false;
+
+        scene.remove(
+            closest
+        );
+
+        gainXP(
+            closest.userData.boss
+                ? 150
+                : 50
+        );
+
+        notify(
+            closest.userData.name +
+            " defeated!"
+        );
+
+        if(
+            closest.userData.boss
+        ) {
+
+            completeQuest(5);
+
+            notify(
+                "The Final Heart quest completed!"
+            );
+        }
+    }
+}
+
+function enemyAI(delta) {
+
+    enemies.forEach(enemy => {
+
+        if(!enemy.userData.alive)
+            return;
+
+        const distance =
+            enemy.position.distanceTo(
+                player.position
+            );
+
+        if(distance < 20) {
+
+            const direction =
+                player.position.clone()
+                .sub(enemy.position)
+                .normalize();
+
+            enemy.position.x +=
+                direction.x *
+                delta *
+                2;
+
+            enemy.position.z +=
+                direction.z *
+                delta *
+                2;
+
+            if(distance < 3) {
+
+                let damage =
+                    enemy.userData.damage;
+
+                if(skills.stress) {
+                    damage *= .75;
+                }
+
+                damage *= delta;
+
+                playerStats.hp -=
+                    damage;
+
+                if(
+                    playerStats.hp <= 0
+                ) {
+
+                    playerStats.hp =
+                        playerStats.maxHP;
+
+                    player.position.set(
+                        0,
+                        0,
+                        70
+                    );
+
+                    notify(
+                        "Arthur recovered at Nafalcram Street."
+                    );
+                }
+            }
+        }
+    });
+}
+
+/* =========================================================
+   INTERACTION
+========================================================= */
+
+function interact() {
+
+    let nearestNPC = null;
+    let nearestDistance = 4;
+
+    npcs.forEach(npc => {
+
+        const d =
+            player.position.distanceTo(
+                npc.position
+            );
+
+        if(d < nearestDistance) {
+
+            nearestNPC =
+                npc;
+
+            nearestDistance =
+                d;
+        }
+    });
+
+    if(nearestNPC) {
+
+        talkToNPC(
+            nearestNPC
+        );
+
+        return;
+    }
+
+    items.forEach(item => {
+
+        if(item.userData.collected)
+            return;
+
+        const d =
+            player.position.distanceTo(
+                item.position
+            );
+
+        if(d < 3) {
+
+            collectItem(item);
+        }
+    });
+}
+
+function talkToNPC(npc) {
+
+    const name =
+        npc.userData.name;
+
+    if(name === "Centennial Doctor") {
+
+        notify(
+            "Doctor: Protect your heart. Practice breathing, control stress and choose nutritious food."
+        );
+
+        completeQuest(1);
+
+    } else if(
+        name === "Young Friend - Age 20" ||
+        name === "Friend - Age 30" ||
+        name === "Friend - Age 40" ||
+        name === "Friend - Age 50"
+    ) {
+
+        notify(
+            name +
+            ": Friends can support one another through every stage of life."
+        );
+
+        checkFriendsQuest();
+
+    } else if(
+        name === "Church Elder"
+    ) {
+
+        notify(
+            "Church Elder: Life is precious. Do not waste the memories and friendships you receive."
+        );
+
+        completeQuest(4);
+    }
+}
+
+function collectItem(item) {
+
+    item.userData.collected =
+        true;
+
+    scene.remove(
+        item
+    );
+
+    inventory[
+        item.userData.type
+    ]++;
+
+    notify(
+        "Collected: " +
+        item.userData.name
+    );
+
+    checkHealthyQuest();
+}
+
+/* =========================================================
+   QUESTS
+========================================================= */
+
+function completeQuest(index) {
+
+    if(
+        quests[index].completed
+    )
+        return;
+
+    quests[index].completed =
+        true;
+
+    gainXP(
+        quests[index].xp
+    );
+
+    notify(
+        "Quest Complete: " +
+        quests[index].title
+    );
+
+    updateQuestText();
+}
+
+function checkHealthyQuest() {
+
+    if(
+        inventory.vegetables >= 2 &&
+        inventory.fruits >= 2 &&
+        inventory.vitamins >= 1
+    ) {
+
+        completeQuest(2);
+    }
+}
+
+function checkFriendsQuest() {
+
+    let count = 0;
+
+    const friendNames = [
+        "Young Friend - Age 20",
+        "Friend - Age 30",
+        "Friend - Age 40",
+        "Friend - Age 50"
+    ];
+
+    friendNames.forEach(
+        name => {
+
+            if(
+                npcs.some(
+                    n =>
+                    n.userData.name ===
+                    name &&
+                    n.userData.talked
+                )
+            ) {
+                count++;
+            }
+        }
+    );
+
+    /* Mark everyone as met */
+    npcs.forEach(npc => {
+
+        if(
+            friendNames.includes(
+                npc.userData.name
+            )
+        ) {
+
+            const d =
+                player.position.distanceTo(
+                    npc.position
+                );
+
+            if(d < 5) {
+                npc.userData.talked =
+                    true;
+            }
+        }
+    });
+
+    let met =
+        npcs.filter(
+            npc =>
+            friendNames.includes(
+                npc.userData.name
+            ) &&
+            npc.userData.talked
+        ).length;
+
+    if(met >= 4) {
+
+        completeQuest(3);
+    }
+}
+
+function updateQuestText() {
+
+    const active =
+        quests.find(
+            q => !q.completed
+        );
+
+    if(active) {
+
+        document.getElementById(
+            "questText"
+        ).innerHTML =
+            "<b>" +
+            active.title +
+            "</b><br>" +
+            active.description;
+    } else {
+
+        document.getElementById(
+            "questText"
+        ).textContent =
+            "All quests completed. Arthur's story continues beyond time.";
+    }
+}
+
+/* =========================================================
+   XP / LEVELING
+========================================================= */
+
+function gainXP(amount) {
+
+    if(skills.wisdom) {
+        amount *= 1.25;
+    }
+
+    playerStats.xp +=
+        amount;
+
+    while(
+        playerStats.xp >=
+        playerStats.nextXP
+    ) {
+
+        playerStats.xp -=
+            playerStats.nextXP;
+
+        playerStats.level++;
+
+        playerStats.nextXP =
+            Math.floor(
+                playerStats.nextXP * 1.35
+            );
+
+        playerStats.skillPoints++;
+
+        playerStats.maxHP += 10;
+
+        playerStats.hp =
+            playerStats.maxHP;
+
+        notify(
+            "LEVEL UP! Arthur reached Level " +
+            playerStats.level
+        );
+    }
+
+    updateHUD();
+}
+
+/* =========================================================
+   SKILLS
+========================================================= */
+
+function buySkill(skill) {
+
+    if(skills[skill]) {
+
+        notify(
+            "Skill already learned."
+        );
+
+        return;
+    }
+
+    if(
+        playerStats.skillPoints <= 0
+    ) {
+
+        notify(
+            "You need a Skill Point."
+        );
+
+        return;
+    }
+
+    skills[skill] =
+        true;
+
+    playerStats.skillPoints--;
+
+    if(skill === "heart") {
+
+        playerStats.maxHP += 20;
+
+        playerStats.hp =
+            playerStats.maxHP;
+
+        notify(
+            "Cardiovascular Strength learned!"
+        );
+    }
+
+    if(skill === "breathing") {
+
+        notify(
+            "Controlled Breathing learned!"
+        );
+    }
+
+    if(skill === "stress") {
+
+        notify(
+            "Stress Control learned!"
+        );
+    }
+
+    if(skill === "diet") {
+
+        notify(
+            "Healthy Diet learned!"
+        );
+    }
+
+    if(skill === "wisdom") {
+
+        notify(
+            "Centennial Wisdom learned!"
+        );
+    }
+
+    updateHUD();
+}
+
+/* =========================================================
+   ITEMS / HEALING
+========================================================= */
+
+function useItem(type) {
+
+    if(
+        !inventory[type] ||
+        inventory[type] <= 0
+    ) {
+
+        notify(
+            "You don't have that item."
+        );
+
+        return;
+    }
+
+    inventory[type]--;
+
+    if(type === "vegetables") {
+
+        heal(15);
+    }
+
+    if(type === "fruits") {
+
+        heal(20);
+    }
+
+    if(type === "medicine") {
+
+        heal(35);
+    }
+
+    if(type === "vitamins") {
+
+        playerStats.stamina =
+            Math.min(
+                playerStats.maxStamina,
+                playerStats.stamina + 50
+            );
+
+        notify(
+            "Vitamins restored stamina."
+        );
+    }
+}
+
+function heal(amount) {
+
+    if(skills.diet) {
+        amount *= 1.4;
+    }
+
+    playerStats.hp =
+        Math.min(
+            playerStats.maxHP,
+            playerStats.hp + amount
+        );
+
+    notify(
+        "Arthur recovered " +
+        Math.floor(amount) +
+        " HP."
+    );
+}
+
+/* =========================================================
+   UI
+========================================================= */
+
+function updateHUD() {
+
+    document.getElementById(
+        "level"
+    ).textContent =
+        playerStats.level;
+
+    document.getElementById(
+        "className"
+    ).textContent =
+        playerStats.className;
+
+    document.getElementById(
+        "hpText"
+    ).textContent =
+        Math.floor(playerStats.hp) +
+        "/" +
+        playerStats.maxHP;
+
+    document.getElementById(
+        "staminaText"
+    ).textContent =
+        Math.floor(playerStats.stamina) +
+        "/" +
+        playerStats.maxStamina;
+
+    document.getElementById(
+        "healthFill"
+    ).style.width =
+        (
+            playerStats.hp /
+            playerStats.maxHP *
+            100
+        ) + "%";
+
+    document.getElementById(
+        "staminaFill"
+    ).style.width =
+        (
+            playerStats.stamina /
+            playerStats.maxStamina *
+            100
+        ) + "%";
+
+    document.getElementById(
+        "xpFill"
+    ).style.width =
+        (
+            playerStats.xp /
+            playerStats.nextXP *
+            100
+        ) + "%";
+
+    document.getElementById(
+        "skillPoints"
+    ).textContent =
+        playerStats.skillPoints;
+}
+
+function updateInteraction() {
+
+    let found = false;
+
+    npcs.forEach(npc => {
+
+        if(
+            player.position.distanceTo(
+                npc.position
+            ) < 4
+        ) {
+
+            found = true;
+
+            document.getElementById(
+                "interaction"
+            ).textContent =
+                "Press E to talk to " +
+                npc.userData.name;
+        }
+    });
+
+    items.forEach(item => {
+
+        if(item.userData.collected)
+            return;
+
+        if(
+            player.position.distanceTo(
+                item.position
+            ) < 3
+        ) {
+
+            found = true;
+
+            document.getElementById(
+                "interaction"
+            ).textContent =
+                "Press E to collect " +
+                item.userData.name;
+        }
+    });
+
+    document.getElementById(
+        "interaction"
+    ).style.display =
+        found
+            ? "block"
+            : "none";
+}
+
+function showDamage(enemy, damage) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.className =
+        "damage";
+
+    div.textContent =
+        "-" +
+        Math.floor(damage);
+
+    div.style.left =
+        (
+            window.innerWidth/2 +
+            (Math.random()*100-50)
+        ) + "px";
+
+    div.style.top =
+        (
+            window.innerHeight/2 -
+            50
+        ) + "px";
+
+    document.body.appendChild(div);
+
+    setTimeout(
+        () => div.remove(),
+        1000
+    );
+}
+
+function notify(message) {
+
+    const container =
+        document.getElementById(
+            "notifications"
+        );
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.className =
+        "notification";
+
+    div.textContent =
+        message;
+
+    container.appendChild(
+        div
+    );
+
+    setTimeout(
+        () => div.remove(),
+        3000
+    );
+}
+
+/* =========================================================
+   MENUS
+========================================================= */
+
+function openMenu(id) {
+
+    closeMenus();
+
+    document.getElementById(
+        id
+    ).style.display =
+        "flex";
+}
+
+function closeMenus() {
+
+    document.querySelectorAll(
+        ".overlay"
+    ).forEach(
+        menu =>
+        menu.style.display =
+        "none"
+    );
+}
+
+function toggleMenu(id) {
+
+    const menu =
+        document.getElementById(id);
+
+    if(
+        menu.style.display ===
+        "flex"
+    ) {
+
+        closeMenus();
+
+    } else {
+
+        openMenu(id);
+    }
+}
+
+/* =========================================================
+   MINIMAP
+========================================================= */
+
+function updateMinimap() {
+
+    if(!player)
+        return;
+
+    const canvas =
+        document.getElementById(
+            "mapCanvas"
+        );
+
+    const ctx =
+        canvas.getContext("2d");
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.fillStyle =
+        "#101016";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    /* Roads */
+
+    ctx.fillStyle =
+        "#33333b";
+
+    ctx.fillRect(
+        0,
+        85,
+        190,
+        20
+    );
+
+    ctx.fillRect(
+        85,
+        0,
+        20,
+        190
+    );
+
+    /* Buildings */
+
+    ctx.fillStyle =
+        "#684c79";
+
+    ctx.fillRect(
+        40,
+        35,
+        25,
+        20
+    );
+
+    ctx.fillStyle =
+        "#587085";
+
+    ctx.fillRect(
+        125,
+        35,
+        25,
+        20
+    );
+
+    /* Player */
+
+    const px =
+        95 +
+        player.position.x *
+        .85;
+
+    const pz =
+        95 +
+        player.position.z *
+        .85;
+
+    ctx.fillStyle =
+        "#ffd76b";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        px,
+        pz,
+        5,
+        0,
+        Math.PI*2
+    );
+
+    ctx.fill();
+
+    /* Enemies */
+
+    enemies.forEach(enemy => {
+
+        if(!enemy.userData.alive)
+            return;
+
+        const x =
+            95 +
+            enemy.position.x *
+            .85;
+
+        const z =
+            95 +
+            enemy.position.z *
+            .85;
+
+        ctx.fillStyle =
+            enemy.userData.boss
+                ? "#ff3030"
+                : "#a22dce";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            x,
+            z,
+            enemy.userData.boss
+                ? 5
+                : 3,
+            0,
+            Math.PI*2
+        );
+
+        ctx.fill();
+    });
+}
+
+/* =========================================================
+   QUEST LOCATION DETECTION
+========================================================= */
+
+function updateQuestProgress() {
+
+    /* First quest */
+    if(
+        !quests[0].completed &&
+        player.position.length() < 80
+    ) {
+
+        completeQuest(0);
+    }
+
+    /* Church/Valentine quest */
+    if(
+        player.position.distanceTo(
+            new THREE.Vector3(
+                45,
+                0,
+                -20
+            )
+        ) < 15
+    ) {
+
+        notify(
+            "The Church is nearby. A place for reflection."
+        );
+    }
+}
+
+/* =========================================================
+   ANIMATION
+========================================================= */
+
+function animate() {
+
+    requestAnimationFrame(
+        animate
+    );
+
+    const delta =
+        Math.min(
+            clock.getDelta(),
+            .05
+        );
+
+    updatePlayer(delta);
+
+    updateCamera();
+
+    enemyAI(delta);
+
+    updateInteraction();
+
+    updateQuestProgress();
+
+    updateMinimap();
+
+    updateHUD();
+
+    renderer.render(
+        scene,
+        camera
+    );
+}
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+function onResize() {
+
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+}
+
+/* =========================================================
+   START GAME
+========================================================= */
+
+document.getElementById(
+    "startButton"
+).addEventListener(
+    "click",
+    function() {
+
+        document.getElementById(
+            "titleScreen"
+        ).style.display =
+            "none";
+
+        document.getElementById(
+            "hud"
+        ).style.display =
+            "block";
+
+        document.body.requestPointerLock();
+
+        notify(
+            "Welcome to Nafalcram Street, Arthur McKogan."
+        );
+
+        notify(
+            "Your journey toward the surviving centennials begins."
+        );
+
+        updateQuestText();
+    }
+);
+
+/* =========================================================
+   START
+========================================================= */
+
+init();
+
+</script>
+
+</body>
+</html>
